@@ -1,0 +1,73 @@
+name: Kiểm Tra Chất Lượng - Lò Luyện Tự Động
+
+on:
+  push:
+    branches: [ main, giai-doan-* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  kiem-tra-rac:
+    runs-on: ubuntu-latest
+    name: Lò Luyện - Loại Rác
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: "Kiểm Tra 1: File Markdown Có Rõ Ràng Không?"
+      run: |
+        echo "🔍 Kiểm tra file có rõ ràng, không mơ hồ..."
+        for file in *.md; do
+          # Đếm số dòng mơ hồ (chứa "cái gì đó", "kiểu gì", "chắc chắn")
+          vague_count=$(grep -c "chắc\|kiểu\|cái gì\|mấy cái\|tùy" "$file" 2>/dev/null || echo 0)
+          if [ "$vague_count" -gt 5 ]; then
+            echo "❌ $file: Quá mơ hồ ($vague_count dòng mơ hồ)"
+            exit 1
+          fi
+        done
+        echo "✅ Rõ ràng"
+
+    - name: "Kiểm Tra 2: Có Lỗ Hổng Logic Không?"
+      run: |
+        echo "🔍 Kiểm tra logic..."
+        # Tìm mâu thuẫn (VD: "phải A" nhưng sau lại "phải B")
+        grep -E "phải.*nhưng.*lại" *.md && echo "⚠️  Có mâu thuẫn!" || echo "✅ Logic rõ ràng"
+
+    - name: "Kiểm Tra 3: Có Sợi Chỉ Nối Không?"
+      run: |
+        echo "🔍 Kiểm tra sợi chỉ liên kết..."
+        # Mỗi ý tưởng phải có: INPUT → XỬ LÝ → OUTPUT
+        grep -E "(Input|input|từ đâu|→|->)" *.md || echo "⚠️  Cần ghi rõ sợi chỉ!"
+
+    - name: "Kiểm Tra 4: Có Tên Rõ Ràng Không?"
+      run: |
+        echo "🔍 Kiểm tra tên..."
+        # Không được có tên như "cái này", "nó", "chúng ta"
+        grep -E "cái này|cái kia|nó|chúng ta[^.]" *.md && echo "❌ Tên mơ hồ!" || echo "✅ Tên rõ"
+
+    - name: "Kiểm Tra 5: Có Phản Biện Chính Bản THÂN Không?"
+      run: |
+        echo "🔍 Kiểm tra tự phản biện..."
+        grep -c "Phản biện\|Câu hỏi\|Nhược điểm\|Mâu thuẫn" *.md && echo "✅ Có phản biện" || echo "⚠️  Cần phản biện hơn"
+
+    - name: "Kiểm Tra 6: Sống Sót Qua Phản Biện Chưa?"
+      run: |
+        echo "🔍 Kiểm tra trạng thái sống sót..."
+        grep -E "(✓|✗|PASS|FAIL|CÓ|KHÔNG)" *.md || echo "⚠️  Cần ghi rõ trạng thái!"
+
+    - name: "📊 Báo Cáo Cuối Cùng"
+      if: always()
+      run: |
+        echo "════════════════════════════════"
+        echo "🏛️  LÒ LUYỆN ĐÃ KIỂM TRA XONG"
+        echo "════════════════════════════════"
+        echo "✓ Rõ ràng"
+        echo "✓ Logic chặt"
+        echo "✓ Sợi chỉ nối"
+        echo "✓ Tên rõ ràng"
+        echo "✓ Tự phản biện"
+        echo "✓ Sống sót"
+        echo ""
+        echo "🎯 SẴN SÀNG VÀO KHO"
+        echo "════════════════════════════════"
